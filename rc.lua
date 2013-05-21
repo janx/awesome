@@ -44,10 +44,15 @@ end
 beautiful.init(awful.util.getdir("config") .. "/zenburn/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
-terminal = "urxvt"
---terminal = "terminology"
+-- terminal = "urxvt"
+-- terminal = "terminology"
+terminal = "gnome-terminal"
+
 editor = os.getenv("EDITOR") or "vim"
 editor_cmd = terminal .. " -e " .. editor
+function edit_in_terminal(path)
+  return terminal .. " -e '" .. editor .. " " .. path .. "'"
+end
 
 -- Default modkey.
 -- Usually, Mod4 is the key with a logo between Control and Alt.
@@ -96,7 +101,7 @@ end
 -- Create a laucher widget and a main menu
 myawesomemenu = {
    { "manual", terminal .. " -e man awesome" },
-   { "edit config", editor_cmd .. " " .. awesome.conffile },
+   { "edit config", edit_in_terminal(awesome.conffile) },
    { "restart", awesome.restart },
    { "quit", awesome.quit }
 }
@@ -295,16 +300,17 @@ for s = 1, screen.count() do
       right_layout:add(margin_bar)
       right_layout:add(cpulabel)
       right_layout:add(cpu)
-      right_layout:add(mycore1)
-      right_layout:add(mycore2)
-      right_layout:add(mycore3)
-      right_layout:add(mycore4)
+      --right_layout:add(mycore1)
+      --right_layout:add(mycore2)
+      --right_layout:add(mycore3)
+      --right_layout:add(mycore4)
       right_layout:add(margin_bar)
       right_layout:add(memlabel)
       right_layout:add(mem)
       right_layout:add(margin_bar)
       right_layout:add(batlabel)
       right_layout:add(bat)
+      right_layout:add(margin_bar)
       --right_layout:add(disklabel)
       --right_layout:add(disk)
       right_layout:add(wibox.widget.systray())
@@ -401,11 +407,12 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey, "Shift"   }, "Return", function () awful.util.spawn(terminal .. " -e /home/jan/scripts/tmux_tasks") end),
     awful.key({ modkey,           }, "m",      function () awful.util.spawn(terminal .. " -e mc") end),
     awful.key({ modkey, "Shift"   }, "m",      function () awful.util.spawn("nautilus") end),
-    awful.key({ modkey,           }, "t",      function () awful.util.spawn(editor_cmd .. " /home/jan/Yunio/notes/jan.org") end),
-    awful.key({ modkey, "Shift"   }, "t",      function () awful.util.spawn(editor_cmd .. " /home/jan/Yunio/notes/worklog.org") end),
-    awful.key({ modkey,           }, "c",      function () awful.util.spawn(editor_cmd .. " " .. awesome.conffile) end),
+    awful.key({ modkey,           }, "t",      function () awful.util.spawn(edit_in_terminal("/home/jan/Yunio/notes/jan.org")) end),
+    awful.key({ modkey, "Shift"   }, "t",      function () awful.util.spawn(edit_in_terminal("/home/jan/Yunio/notes/worklog.org")) end),
+    awful.key({ modkey,           }, "c",      function () awful.util.spawn(edit_in_terminal(awesome.conffile)) end),
     awful.key({ modkey,           }, "q", awesome.restart),
-    awful.key({ modkey, "Shift"   }, "q", awesome.quit),
+    --awful.key({ modkey, "Shift"   }, "q", awesome.quit),
+    awful.key({ modkey, "Shift"   }, "q",     function () awful.util.spawn("gnome-session-quit --power-off") end),
 
     awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05)    end),
     awful.key({ modkey,           }, "h",     function () awful.tag.incmwfact(-0.05)    end),
@@ -414,8 +421,10 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey, "Shift"   }, "=",     function () awful.tag.incncol( 1)         end),
     awful.key({ modkey, "Shift"   }, "-",     function () awful.tag.incncol(-1)         end),
     awful.key({ modkey,           }, "space", function () awful.layout.inc(layouts,  1) end),
-    awful.key({ modkey, "Shift"   }, "space", function () awful.layout.inc(layouts, -1) end),
-    awful.key({ modkey, "Control" }, "l",     function () awful.util.spawn("xscreensaver-command -lock") end),
+    awful.key({ modkey, "Shift"   }, "space", function () awful.layout.set(awful.layout.suit.tile) end),
+    awful.key({ modkey,           }, "f",     function (c) awful.layout.set(awful.layout.suit.max) end),
+    awful.key({ modkey, "Control" }, "l",     function () awful.util.spawn("gnome-screensaver-command -l") end),
+    --awful.key({ modkey, "Control" }, "l",     function () awful.util.spawn("xscreensaver-command -lock") end),
 
     --awful.key({ modkey, "Control" }, "n", awful.client.restore),
 
@@ -457,7 +466,7 @@ globalkeys = awful.util.table.join(
                   awful.prompt.run({ prompt = "Write note: " },
                   mypromptbox[mouse.screen].widget,
                   function (...)
-                    awful.util.spawn(editor_cmd .. " /home/jan/Yunio/notes/" .. ...)
+                    awful.util.spawn(edit_in_terminal("/home/jan/Yunio/notes/" .. ...))
                   end,
                   notes_completion,
                   awful.util.getdir("cache") .. "/history_notes")
@@ -472,12 +481,7 @@ clientkeys = awful.util.table.join(
     awful.key({ modkey,           }, "'",      awful.client.floating.toggle                     ),
     awful.key({ modkey, "Shift"   }, "'",      function (c) c:swap(awful.client.getmaster()) end),
     awful.key({ modkey,           }, "o",      awful.client.movetoscreen                        ),
-    awful.key({ modkey,           }, "t",      function (c) c.ontop = not c.ontop            end),
-    awful.key({ modkey,           }, "f",
-        function (c)
-            c.maximized_horizontal = not c.maximized_horizontal
-            c.maximized_vertical   = not c.maximized_vertical
-        end)
+    awful.key({ modkey,           }, "t",      function (c) c.ontop = not c.ontop            end)
 )
 
 -- Compute the maximum number of digit we need, limited to 9
@@ -544,20 +548,36 @@ awful.rules.rules = {
       properties = { tag = tags[1][1] } },
     { rule = { instance = "plugin-container" },
       properties = { floating = true } },
+    { rule = { class = "Steam" },
+      properties = { floating = true } },
     { rule = { instance = "exe" },
       properties = { floating = true } },
     { rule = { class = "MPlayer" },
       properties = { floating = true } },
+    { rule = { class = "Litecoin-qt" },
+      properties = { floating = true } },
+    { rule = { class = "Bitcoin-qt" },
+      properties = { floating = true } },
+    { rule = { class = "Hotot-qt" },
+      properties = { floating = true, border_width = 0 } },
+    { rule = { class = "Choqok" },
+      properties = { floating = true, border_width = 0 } },
     { rule = { class = "Goldendict" },
       properties = { floating = true } },
     { rule = { class = "pinentry" },
       properties = { floating = true } },
     { rule = { class = "gimp" },
       properties = { floating = true } },
+    { rule = { class = "Shutter" },
+      properties = { floating = true } },
+    { rule = { class = "Hipchat" },
+      properties = { screen = screen.count(), tag = tags[screen.count()][2], border_width = 0 } },
     { rule = { class = "Pidgin" },
       properties = { floating = true, screen = screen.count(), tag = tags[screen.count()][9] } },
     { rule = { class = "Skype" },
       properties = { floating = true, screen = screen.count(), tag = tags[screen.count()][9] } },
+    { rule = { class = "Chromium", role = "pop-up" },
+      properties = { floating = true } }
     -- Set Firefox to always map on tags number 2 of screen 1.
     -- { rule = { class = "Firefox" },
     --   properties = { tag = tags[1][2] } },
